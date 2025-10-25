@@ -9,7 +9,10 @@ use http::{HeaderMap, StatusCode, Uri};
 use octocrab::{
     FromResponse, Octocrab, Page,
     etag::EntityTag,
-    models::{self, IssueEventId, IssueState, issues::Issue},
+    models::{
+        self, IssueEventId, IssueState,
+        issues::{Issue, IssueStateReason},
+    },
 };
 use reqwest::Url;
 use serde::Deserialize;
@@ -195,7 +198,12 @@ fn create_issue_data(issue: &Issue) -> IssueData {
             value: StateBundleElement {
                 name: match issue.state {
                     IssueState::Open => "Open",
-                    IssueState::Closed => "Fixed",
+                    IssueState::Closed => match issue.state_reason {
+                        Some(IssueStateReason::NotPlanned) => "Won't fix",
+                        Some(IssueStateReason::Reopened) => "Reopened",
+                        Some(IssueStateReason::Duplicate) => "Duplicate",
+                        _ => "Fixed",
+                    },
                     _ => "Submitted",
                 }
                 .to_string(),
